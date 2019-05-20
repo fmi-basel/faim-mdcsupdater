@@ -93,11 +93,12 @@ class MDCStoreHandle:
                  username,
                  password,
                  host='localhost',
-                 database='MDCStore'):
+                 database='MDCStore',
+                 driver='ODBC Driver 17 for SQL Server'):
         '''
         '''
         self._connect_cmd = (
-            'DRIVER={ODBC Driver 17 for SQL Server}; ' +
+            'DRIVER={{}}; '.format(driver) +
             'SERVER={} ; DATABASE={} ; UID={} ; PWD={}'.format(
                 host, database, username, password))
 
