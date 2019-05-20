@@ -263,7 +263,7 @@ class MDCStoreHandle:
     def _update_multiple_files(self, obj_ids, new_location_id, field_type):
         '''
         '''
-        if not field_type in MDCStoreHandle.LOCATION_COLUMNS:
+        if field_type not in MDCStoreHandle.LOCATION_COLUMNS:
             raise RuntimeError(
                 'Unknown field type for update: {}'.format(field_type))
 
@@ -287,6 +287,6 @@ class MDCStoreHandle:
         self.logger.debug('Query for updating to new location: %s', query)
         with self.db_conn.cursor() as cursor:
             count = cursor.execute(query, new_location_id).rowcount
-            print('Updated {} items to {}={}'.format(count, field_type.value,
-                                                     new_location_id))
+            self.logger.info('Updated {} items to {}={}'.format(
+                count, field_type.value, new_location_id))
             cursor.commit()
