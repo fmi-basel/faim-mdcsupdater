@@ -21,7 +21,7 @@ def get_config(fname):
     '''
     config = configparser.ConfigParser()
     config.read(fname)
-    return config._sections['MDCStoreUpdater']
+    return {key: val for key, val in config.items(section='MDCStoreUpdater')}
 
 
 CONFIG_FNAME = 'mdcstore_updater.ini'
