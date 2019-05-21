@@ -38,6 +38,8 @@ class MDCStoreUpdaterPlugin:
                'database from <source> to <destination 1>. The update is '
                'performed once at the end of a robocopy task.')
 
+    logger = logging.getLogger(__name__)
+
     def __init__(self, shared_resources):
         '''
         '''
@@ -46,20 +48,27 @@ class MDCStoreUpdaterPlugin:
     def on_activation(self):
         '''
         '''
-        logger = logging.getLogger(__name__)
-        logger.info('MDCStore Updater activated. Testing connection...')
+        self.logger.info('MDCStore Updater activated. Testing connection...')
         try:
             with MDCStoreHandle(**CONFIG):
-                logger.info('MDCStore connection successful.')
+                self.logger.info('MDCStore connection successful.')
         except pyodbc.Error as err:
-            logger.error('Connection could not be established: %s', err)
+            self.logger.error('Connection could not be established: %s', err)
+
+    def on_call(self):
+        '''
+        '''
+        self._run()
 
     def on_task_end(self):
         '''
         '''
-        logger = logging.getLogger(__name__)
+        self._run()
 
-        logger.info('Updating MDCStore...')
+    def _run(self):
+        '''
+        '''
+        self.logger.info('Updating MDCStore...')
         try:
             with MDCStoreHandle(**CONFIG) as db_handle:
 
@@ -68,7 +77,8 @@ class MDCStoreUpdaterPlugin:
                 number_of_updated = db_handle.update_file_locations(
                     source=self.shared_resources.source_var.get(), dest=dest)
 
-            logger.info('MDCStore update finished. %s entries were updated.',
-                        number_of_updated)
+            self.logger.info(
+                'MDCStore update finished. %s entries were updated.',
+                number_of_updated)
         except Exception as err:
-            logger.error('Error during MDCStore update: %s', err)
+            self.logger.error('Error during MDCStore update: %s', err)
