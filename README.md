@@ -16,7 +16,9 @@ If you want to use this as a plugin in [FAIM-Robocopy](https://github.com/fmi-ba
 
 ## Usage
 
-The updater can be used as plugin in [FAIM-Robocopy](https://github.com/fmi-basel/faim-robocopy) or as a standalone script:
+The updater can be used as plugin in [FAIM-Robocopy](https://github.com/fmi-basel/faim-robocopy) or as a standalone script.
+
+For the latter, assume that the database the information that some images are at ```old/location/of/images```, but that these images were in the meantime moved to ```new/location/of/images```. You can now update these database entries with:
 
 ```
 cd PATH/TO/faim-mdcsupdater
