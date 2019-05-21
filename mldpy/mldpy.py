@@ -69,7 +69,8 @@ def file_location_from_path(path):
 class MDCStoreHandle:
     '''Handles interaction with MCDStore database.
 
-    NOTE For now, this only implements MS-SQL versions.
+    NOTE Currently, this only implements the update for MDCStore running
+    on a MS-SQL database.
 
     '''
 
@@ -94,13 +95,19 @@ class MDCStoreHandle:
                  password,
                  host='localhost',
                  database='MDCStore',
-                 driver='ODBC Driver 17 for SQL Server'):
+                 driver=''):
         '''
         '''
-        self._connect_cmd = (
-            'DRIVER={{}}; '.format(driver) +
-            'SERVER={} ; DATABASE={} ; UID={} ; PWD={}'.format(
-                host, database, username, password))
+        if not driver.startswith('{'):
+            driver = '{' + driver
+        if not driver.endswith('}'):
+            driver += '}'
+        self._connect_cmd = ('DRIVER={} ; '
+                             'SERVER={} ; '
+                             'DATABASE={} ; '
+                             'UID={} ; '
+                             'PWD={}'.format(driver, host, database, username,
+                                             password))
 
     def __enter__(self):
         '''
@@ -117,12 +124,14 @@ class MDCStoreHandle:
     def open(self):
         '''
         '''
-        self.logger.debug('Opening connection to database.')
+        self.logger.debug('Opening connection to database with %s',
+                          self._connect_cmd)
         self.db_conn = pyodbc.connect(self._connect_cmd, timeout=10)
 
     def close(self):
         '''
         '''
+        self.logger.debug('Closing connection to database.')
         self.db_conn.close()
 
     def _collect_locations(self, source):
@@ -196,6 +205,7 @@ class MDCStoreHandle:
             return os.path.join(_dest_dir(source_dir), obj_name)
 
         # cache locations in order to be able to free up the db connection.
+        number_of_updated = 0
         for location_id, source_dir in list(self._collect_locations(source)):
 
             # Check for all columns refering to a location_id.
@@ -216,8 +226,9 @@ class MDCStoreHandle:
                 if len(queue) >= 1:
                     new_location_id = self._create_new_location(
                         _dest_dir(source_dir))
-                    self._update_multiple_files(queue, new_location_id,
-                                                location_type)
+                    number_of_updated += self._update_multiple_files(
+                        queue, new_location_id, location_type)
+        return number_of_updated
 
     def _create_new_location(self, dest_dir):
         '''
@@ -287,6 +298,7 @@ class MDCStoreHandle:
         self.logger.debug('Query for updating to new location: %s', query)
         with self.db_conn.cursor() as cursor:
             count = cursor.execute(query, new_location_id).rowcount
-            self.logger.info('Updated {} items to {}={}'.format(
+            self.logger.debug('Updated {} items to {}={}'.format(
                 count, field_type.value, new_location_id))
             cursor.commit()
+            return count
