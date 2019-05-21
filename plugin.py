@@ -4,6 +4,7 @@ plate images in an MDCStore database. It supports MS-SQL databases.
 The configuration can be set in "mdcstore_updater.ini"
 
 '''
+import os
 import logging
 import configparser
 import pyodbc
@@ -24,7 +25,7 @@ def get_config(fname):
     return {key: val for key, val in config.items(section='MDCStoreUpdater')}
 
 
-CONFIG_FNAME = 'mdcstore_updater.ini'
+CONFIG_FNAME = os.path.join(os.path.dirname(__file__), 'mdcstore_updater.ini')
 CONFIG = get_config(CONFIG_FNAME)
 
 
@@ -64,9 +65,10 @@ class MDCStoreUpdaterPlugin:
 
                 dest = self.shared_resources.dest1_var.get()
 
-                db_handle.update_file_locations(
+                number_of_updated = db_handle.update_file_locations(
                     source=self.shared_resources.source_var.get(), dest=dest)
 
-            logger.info('MDCStore update finished.')
+            logger.info('MDCStore update finished. %s entries were updated.',
+                        number_of_updated)
         except Exception as err:
             logger.error('Error during MDCStore update: %s', err)
