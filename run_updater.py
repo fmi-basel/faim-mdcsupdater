@@ -31,7 +31,8 @@ def parse():
                 setattr(args, key, val)
 
     if args.username is None or args.password is None:
-        raise argparse.ArgumentError(username_arg, 
+        raise argparse.ArgumentError(
+            username_arg,
             'Both --username and --password must be set or defined '
             'in the given config.')
     return args
@@ -42,13 +43,10 @@ def main():
     '''
     args = parse()
 
-    print(args)
-
-    with MDCStoreHandle(
-            host=args.host,
-            database=args.database,
-            username=args.username,
-            password=args.password) as db_handle:
+    with MDCStoreHandle(host=args.host,
+                        database=args.database,
+                        username=args.username,
+                        password=args.password) as db_handle:
         db_handle.update_file_locations(args.source, args.dest)
 
 
