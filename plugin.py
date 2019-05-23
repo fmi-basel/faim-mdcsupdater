@@ -20,6 +20,9 @@ except ImportError:
 def get_config(fname):
     '''
     '''
+    if not os.path.exists(fname):
+        raise RuntimeError(
+            'Could not find config for MDCStoreUpdater at {}'.format(fname))
     config = configparser.ConfigParser()
     config.read(fname)
     return {key: val for key, val in config.items(section='MDCStoreUpdater')}
@@ -58,24 +61,32 @@ class MDCStoreUpdaterPlugin:
     def on_call(self):
         '''
         '''
-        self._run()
+        source = self.shared_resources.source_var.get()
+        dest = self.shared_resources.dest1_var.get()
+        self._run(source=source, dest=dest)
 
     def on_task_end(self):
         '''
         '''
-        self._run()
+        source = self.shared_resources.source_var.get()
+        dest = self.shared_resources.dest1_var.get()
+        self._run(source=source, dest=dest)
 
-    def _run(self):
+    def _run(self, source, dest):
         '''
         '''
+        for key, path in {'source': source, 'destination': dest}.items():
+            if path == '':
+                self.logger.error(
+                    'Cannot update MDCStore with no %s specified.', key)
+                return
+
         self.logger.info('Updating MDCStore...')
         try:
             with MDCStoreHandle(**CONFIG) as db_handle:
 
-                dest = self.shared_resources.dest1_var.get()
-
                 number_of_updated = db_handle.update_file_locations(
-                    source=self.shared_resources.source_var.get(), dest=dest)
+                    source=source, dest=dest)
 
             self.logger.info(
                 'MDCStore update finished. %s entries were updated.',
