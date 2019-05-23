@@ -66,6 +66,13 @@ def file_location_from_path(path):
     return location
 
 
+def _replace_pw(stuff):
+    '''replace password in string for logging.
+    
+    '''
+    return re.sub('PWD=.*;', 'PWD=***;', stuff)
+
+
 class MDCStoreHandle:
     '''Handles interaction with MCDStore database.
 
@@ -106,8 +113,8 @@ class MDCStoreHandle:
                              'SERVER={}; '
                              'DATABASE={}; '
                              'UID={}; '
-                             'PWD={}'.format(driver, host, database, username,
-                                             password))
+                             'PWD={};'.format(driver, host, database, username,
+                                              password))
 
     def __enter__(self):
         '''
@@ -125,7 +132,7 @@ class MDCStoreHandle:
         '''
         '''
         self.logger.debug('Opening connection to database with %s',
-                          self._connect_cmd)
+                          _replace_pw(self._connect_cmd))
         self.db_conn = pyodbc.connect(self._connect_cmd, timeout=10)
 
     def close(self):
