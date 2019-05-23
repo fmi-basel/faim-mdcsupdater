@@ -102,10 +102,10 @@ class MDCStoreHandle:
             driver = '{' + driver
         if not driver.endswith('}'):
             driver += '}'
-        self._connect_cmd = ('DRIVER={} ; '
-                             'SERVER={} ; '
-                             'DATABASE={} ; '
-                             'UID={} ; '
+        self._connect_cmd = ('DRIVER={}; '
+                             'SERVER={}; '
+                             'DATABASE={}; '
+                             'UID={}; '
                              'PWD={}'.format(driver, host, database, username,
                                              password))
 
