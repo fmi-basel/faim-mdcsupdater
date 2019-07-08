@@ -102,9 +102,11 @@ class MDCStoreHandle:
                  password,
                  host='localhost',
                  database='MDCStore',
-                 driver=''):
+                 driver=None):
         '''
         '''
+        if driver is None:
+            driver = 'ODBC Driver 17 for SQL Server'
         if not driver.startswith('{'):
             driver = '{' + driver
         if not driver.endswith('}'):
@@ -175,7 +177,8 @@ class MDCStoreHandle:
         """.format(MDCStoreHandle.FNAME_COLUMNS[location_type],
                    location_type.value)
 
-        self.logger.debug('Query for images at location: %s', query)
+        self.logger.debug('Query for images at location %s: %s', location_id,
+                          query)
         with self.db_conn.cursor() as cursor:
             for plate_image_id, plate_image_name in cursor.execute(
                     query, location_id):
@@ -201,7 +204,8 @@ class MDCStoreHandle:
             source/ part of source_dir with dest/.
 
             '''
-            common = os.path.commonpath([source, source_dir])
+            common = os.path.commonprefix([source, source_dir])
+            assert common == source
             remainder = source_dir[len(common):].strip(os.sep)
             return os.path.join(dest, remainder)
 
@@ -213,7 +217,11 @@ class MDCStoreHandle:
 
         # cache locations in order to be able to free up the db connection.
         number_of_updated = 0
-        for location_id, source_dir in list(self._collect_locations(source)):
+        file_location_candidates = list(self._collect_locations(source))
+        self.logger.info(
+            'Found %d candidate file locations at the given source. ',
+            len(file_location_candidates))
+        for location_id, source_dir in file_location_candidates:
 
             # Check for all columns refering to a location_id.
             for location_type in MDCStoreHandle.LOCATION_COLUMNS:
