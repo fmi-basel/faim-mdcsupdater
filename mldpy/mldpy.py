@@ -2,6 +2,7 @@ import os
 import re
 import socket
 import logging
+import pathlib
 
 from itertools import tee
 from enum import Enum
@@ -68,7 +69,7 @@ def file_location_from_path(path):
 
 def _replace_pw(stuff):
     '''replace password in string for logging.
-    
+
     '''
     return re.sub('PWD=.*;', 'PWD=***;', stuff)
 
@@ -80,7 +81,6 @@ class MDCStoreHandle:
     on a MS-SQL database.
 
     '''
-
     class LOCATION_COLUMNS(Enum):
         '''Columns refering to FILE_LOCATIONS.
 
@@ -149,7 +149,7 @@ class MDCStoreHandle:
         query = """
         select
             FL.LOCATION_ID,
-            case 
+            case
                 when FL.LOCATION_TYPE=1 then CONCAT(FL.SERVER_ROOT, FL.DIRECTORY)
                 when FL.LOCATION_TYPE=2 then CONCAT(FL.SERVER_NAME, FL.DIRECTORY)
                 else NULL
@@ -193,6 +193,10 @@ class MDCStoreHandle:
 
         '''
 
+        # quickfix to make the path representation uniform.
+        source = str(pathlib.Path(source))
+        dest = str(pathlib.Path(dest))
+
         def _source_name(source_dir, obj_name):
             '''compose source path to image.
 
@@ -205,15 +209,28 @@ class MDCStoreHandle:
 
             '''
             common = os.path.commonprefix([source, source_dir])
-            assert common == source
+            if not common:
+                raise ValueError(
+                    'Could not determine common path between %s and %s',
+                    source, source_dir)
+            if not common == source:
+                raise ValueError(
+                    'source is not identical to common part of path: %s vs %s',
+                    common, source)
             remainder = source_dir[len(common):].strip(os.sep)
             return os.path.join(dest, remainder)
 
-        def _dest_name(source_dir, obj_name):
-            '''compose potential destination path to image.
+        def _file_exists_at_dest(source_dir, obj_name):
+            '''compose potential destination path to image and check if it exists.
 
             '''
-            return os.path.join(_dest_dir(source_dir), obj_name)
+            try:
+                return os.path.exists(
+                    os.path.join(_dest_dir(source_dir), obj_name))
+            except Exception as err:
+                self.logger.debug(
+                    'Could not check if file exists at destination: %s', err)
+                return False
 
         # cache locations in order to be able to free up the db connection.
         number_of_updated = 0
@@ -226,12 +243,18 @@ class MDCStoreHandle:
             # Check for all columns refering to a location_id.
             for location_type in MDCStoreHandle.LOCATION_COLUMNS:
 
+                self.logger.debug(
+                    'Collecting candidates at location %d : %s of type %s.',
+                    location_id, source_dir, location_type)
+
                 queue = [
                     obj_id
                     for obj_id, obj_name in self.collect_images_at_location(
                         location_id, location_type)
-                    if os.path.exists(_dest_name(source_dir, obj_name))
+                    if _file_exists_at_dest(source_dir, obj_name)
                 ]
+                self.logger.debug('Collected queue of %d candidates',
+                                  len(queue))
 
                 self.logger.info('{:>4}:   {}\n\t{} {} in\n\t{}'.format(
                     location_id, source_dir, len(queue), 'files'
@@ -304,9 +327,9 @@ class MDCStoreHandle:
                 '%d' % obj_id for obj_id in obj_ids))
 
         query = """
-        update 
+        update
             PLATE_IMAGE_DATA
-        set 
+        set
             {}=?
         """.format(field_type.value) + condition
 

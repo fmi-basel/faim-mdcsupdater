@@ -9,7 +9,7 @@ import logging
 import configparser
 import pyodbc
 
-from tkinter import Label, Entry, Toplevel
+from tkinter import Label, Entry
 import tkinter.simpledialog
 
 # NOTE try the relative import in case mldpy is also placed in the
